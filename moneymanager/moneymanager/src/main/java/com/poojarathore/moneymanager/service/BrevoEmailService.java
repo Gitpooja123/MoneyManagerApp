@@ -1,11 +1,11 @@
 package com.poojarathore.moneymanager.service;
 
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -23,11 +23,12 @@ public class BrevoEmailService {
     private String senderName;
 
     public void sendEmail(String to, String subject, String content) {
+
         String url = "https://api.brevo.com/v3/smtp/email";
 
         Map<String, Object> body = Map.of(
                 "sender", Map.of("name", senderName, "email", senderEmail),
-                "to", new Map[]{ Map.of("email", to) },
+                "to", List.of(Map.of("email", to)),
                 "subject", subject,
                 "htmlContent", "<html><body>" + content + "</body></html>"
         );
@@ -37,7 +38,11 @@ public class BrevoEmailService {
         headers.set("api-key", apiKey);
 
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
-        restTemplate.postForEntity(url, request, String.class);
+
+        ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class);
+
+        if(!response.getStatusCode().is2xxSuccessful()) {
+            throw new RuntimeException("Failed to send email: " + response.getBody());
+        }
     }
 }
-
